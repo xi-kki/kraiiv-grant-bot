@@ -18,8 +18,13 @@ Usage:
 import os
 import sys
 import argparse
+import requests
+from bs4 import BeautifulSoup
 import textwrap
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from google import genai
 from google.genai import types
@@ -27,7 +32,7 @@ from google.genai import types
 # ──────────────────────────────────────────────
 # Configuration
 # ──────────────────────────────────────────────
-MODEL = "gemini-4-argon"
+MODEL = "gemini-2.0-flash-thinking-exp-01-21"
 
 KRAIIV_CONTEXT = """
 Kraiiv (kraiiv.xyz) is a healthy-eating habit tracker and wellness rewards platform 
@@ -97,15 +102,19 @@ Extract and structure the following:
 Be concise but precise. This output feeds the grant search and scoring steps.
 """
 
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            thinking_config=types.ThinkingConfig(thinking_level="medium"),
-            max_output_tokens=4096,
-        ),
-    )
-    return response.text
+    try:
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                thinking_config=types.ThinkingConfig(thinking_level="medium"),
+                max_output_tokens=4096,
+            ),
+        )
+        return response.text
+    except Exception as e:
+        print(f"\n❌ Error during project analysis: {e}")
+        sys.exit(1)
 
 
 def step_search_grants(client: genai.Client, project_profile: str) -> str:
@@ -159,15 +168,19 @@ For each opportunity:
 List at least 20 specific opportunities total.
 """
 
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            thinking_config=types.ThinkingConfig(thinking_level="high"),
-            max_output_tokens=8192,
-        ),
-    )
-    return response.text
+    try:
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                thinking_config=types.ThinkingConfig(thinking_level="high"),
+                max_output_tokens=8192,
+            ),
+        )
+        return response.text
+    except Exception as e:
+        print(f"\n❌ Error during grant search: {e}")
+        sys.exit(1)
 
 
 def step_score_and_prioritize(
@@ -210,15 +223,19 @@ Then produce:
 [Common mistakes, how to frame the Bitcoin angle, the African food narrative, etc.]
 """
 
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            thinking_config=types.ThinkingConfig(thinking_level="high"),
-            max_output_tokens=8192,
-        ),
-    )
-    return response.text
+    try:
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                thinking_config=types.ThinkingConfig(thinking_level="high"),
+                max_output_tokens=8192,
+            ),
+        )
+        return response.text
+    except Exception as e:
+        print(f"\n❌ Error during grant scoring: {e}")
+        sys.exit(1)
 
 
 def step_generate_report(
@@ -290,15 +307,19 @@ Avoid vague advice. Every recommendation should have a next step the Kraiiv team
 can take today.
 """
 
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            thinking_config=types.ThinkingConfig(thinking_level="high"),
-            max_output_tokens=16384,
-        ),
-    )
-    return response.text
+    try:
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                thinking_config=types.ThinkingConfig(thinking_level="high"),
+                max_output_tokens=16384,
+            ),
+        )
+        return response.text
+    except Exception as e:
+        print(f"\n❌ Error generating report: {e}")
+        sys.exit(1)
 
 
 # ──────────────────────────────────────────────
@@ -363,6 +384,19 @@ def main():
 
     if args.desc:
         context = args.desc
+    elif args.url:
+        print(f"\n🌐 Fetching project context from: {args.url}")
+        try:
+            response = requests.get(args.url, timeout=10)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, "html.parser")
+            for script_or_style in soup(["script", "style"]):
+                script_or_style.extract()
+            text = soup.get_text(separator=" ", strip=True)
+            context = f"Project extracted from {args.url}:\n\n" + text[:5000]
+        except Exception as e:
+            print(f"❌ Failed to fetch URL: {e}")
+            sys.exit(1)
     else:
         # Default: use Kraiiv's baked-in context
         context = KRAIIV_CONTEXT
