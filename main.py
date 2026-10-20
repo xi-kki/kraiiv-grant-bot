@@ -1,7 +1,7 @@
 """
 Kraiiv Agentic Grant Research Bot
 ----------------------------------
-Powered by Gemini 4 Argon (gemini-4-argon).
+Powered by Gemini 2.0 Flash Thinking Exp (gemini-2.0-flash-thinking-exp-01-21).
 
 Given a project description (or URL), this bot autonomously:
 1. Understands the project — mission, audience, geography, stage
@@ -111,6 +111,9 @@ Be concise but precise. This output feeds the grant search and scoring steps.
                 max_output_tokens=4096,
             ),
         )
+        if not response.text:
+            print("\n❌ Error during project analysis: model returned no text.")
+            sys.exit(1)
         return response.text
     except Exception as e:
         print(f"\n❌ Error during project analysis: {e}")
@@ -177,6 +180,9 @@ List at least 20 specific opportunities total.
                 max_output_tokens=8192,
             ),
         )
+        if not response.text:
+            print("\n❌ Error during grant search: model returned no text.")
+            sys.exit(1)
         return response.text
     except Exception as e:
         print(f"\n❌ Error during grant search: {e}")
@@ -232,6 +238,9 @@ Then produce:
                 max_output_tokens=8192,
             ),
         )
+        if not response.text:
+            print("\n❌ Error during grant scoring: model returned no text.")
+            sys.exit(1)
         return response.text
     except Exception as e:
         print(f"\n❌ Error during grant scoring: {e}")
@@ -271,7 +280,7 @@ Write the FINAL REPORT in this structure:
 # 🌱 Kraiiv Grant & Funding Opportunities Report
 **Generated**: {datetime.now().strftime('%B %d, %Y')}
 **Prepared for**: Kraiiv Team (kraiiv.xyz)
-**Powered by**: Gemini 4 Argon
+**Powered by**: Gemini 2.0 Flash Thinking Exp
 
 ---
 
@@ -316,6 +325,9 @@ can take today.
                 max_output_tokens=16384,
             ),
         )
+        if not response.text:
+            print("\n❌ Error generating report: model returned no text.")
+            sys.exit(1)
         return response.text
     except Exception as e:
         print(f"\n❌ Error generating report: {e}")
@@ -329,7 +341,7 @@ can take today.
 def run_grant_bot(project_context: str) -> None:
     print("\n" + "═" * 60)
     print("  🤖  Kraiiv Agentic Grant Research Bot")
-    print("  Powered by Google Gemini 4 Argon")
+    print("  Powered by Google Gemini 2.0 Flash Thinking Exp")
     print("═" * 60)
 
     client = get_client()
@@ -366,7 +378,7 @@ def run_grant_bot(project_context: str) -> None:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Kraiiv Agentic Grant Research Bot — powered by Gemini 4 Argon"
+        description="Kraiiv Agentic Grant Research Bot — powered by Gemini 2.0 Flash Thinking Exp"
     )
     parser.add_argument(
         "--url",
@@ -393,6 +405,9 @@ def main():
             for script_or_style in soup(["script", "style"]):
                 script_or_style.extract()
             text = soup.get_text(separator=" ", strip=True)
+            if not text:
+                print("❌ No readable text found at that URL.")
+                sys.exit(1)
             context = f"Project extracted from {args.url}:\n\n" + text[:5000]
         except Exception as e:
             print(f"❌ Failed to fetch URL: {e}")
